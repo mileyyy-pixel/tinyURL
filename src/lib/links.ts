@@ -1,5 +1,3 @@
-import type { Link } from "@prisma/client";
-
 import { prisma } from "./prisma";
 
 export type LinkDto = {
@@ -12,7 +10,15 @@ export type LinkDto = {
   updatedAt: string;
 };
 
-export const serializeLink = (link: Link): LinkDto => ({
+export const serializeLink = (link: {
+  id: string;
+  code: string;
+  url: string;
+  totalClicks: number;
+  lastClickedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}): LinkDto => ({
   id: link.id,
   code: link.code,
   url: link.url,
