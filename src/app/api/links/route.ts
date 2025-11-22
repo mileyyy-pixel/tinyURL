@@ -1,4 +1,3 @@
-import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { customAlphabet } from "nanoid";
 
@@ -38,13 +37,12 @@ export async function GET() {
   return NextResponse.json({ links });
 }
 
-const isUniqueConstraintError = (
-  error: unknown,
-): error is Prisma.PrismaClientKnownRequestError =>
+type KnownError = { code?: string };
+const isUniqueConstraintError = (error: unknown): error is KnownError =>
   typeof error === "object" &&
   error !== null &&
   "code" in error &&
-  (error as { code?: unknown }).code === "P2002";
+  (error as KnownError).code === "P2002";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
