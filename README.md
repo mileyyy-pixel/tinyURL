@@ -1,36 +1,139 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TinyLink
+
+TinyLink is a lightweight URL shortener inspired by bit.ly. It lets anyone create branded short links, view click analytics, and manage their catalog from a single dashboard. The project satisfies the TinyLink take-home assignment requirements:
+
+- `/` dashboard for creating, listing, filtering, copying, and deleting links.
+- `/code/:code` stats detail view.
+- `/:code` redirect endpoint that increments click counters.
+- `/healthz` JSON healthcheck.
+- Full REST API under `/api/links`.
+
+## Tech Stack
+
+- [Next.js 16](https://nextjs.org) (App Router, serverless-friendly APIs)
+- [Tailwind CSS](https://tailwindcss.com) for lightweight styling
+- [Prisma ORM](https://www.prisma.io) + Postgres (Neon/Railway/Render compatible)
+- [TypeScript](https://www.typescriptlang.org) end-to-end
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure environment variables
+
+Duplicate `.env.example` into `.env` and fill in your values:
+
+```
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/tinylink?sslmode=require
+NEXT_PUBLIC_BASE_URL=https://your-tinylink.vercel.app
+NEXT_PUBLIC_APP_VERSION=1.0.0
+```
+
+### 3. Apply database schema
+
+```bash
+npx prisma migrate deploy
+# or, for local dev only:
+npx prisma db push
+```
+
+### 4. Run locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Visit http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 5. Helpful scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Script | Description |
+| --- | --- |
+| `npm run dev` | Start Next.js locally |
+| `npm run build` | Production build |
+| `npm run start` | Run built app |
+| `npm run lint` | TypeScript + ESLint |
+| `npx prisma studio` | Inspect the database |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## API Reference
 
-## Learn More
+All responses are JSON and follow the assignment spec.
 
-To learn more about Next.js, take a look at the following resources:
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/links` | List all links, newest first |
+| `POST` | `/api/links` | Create link (`409` on duplicate code) |
+| `GET` | `/api/links/:code` | Fetch stats for one link |
+| `DELETE` | `/api/links/:code` | Remove a link |
+| `GET` | `/code/:code` | Stats page (UI) |
+| `GET` | `/:code` | 302 redirect + click tracking |
+| `GET` | `/healthz` | `{ ok: true, version, uptimeSeconds }` |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Create Link
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```http
+POST /api/links
+Content-Type: application/json
 
-## Deploy on Vercel
+{
+  "url": "https://example.com/docs",
+  "code": "docs24" // optional; auto-generated when omitted
+}
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Successful response:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```json
+{
+  "link": {
+    "code": "docs24",
+    "url": "https://example.com/docs",
+    "totalClicks": 0,
+    "lastClickedAt": null,
+    "createdAt": "2025-01-01T12:00:00.000Z",
+    "updatedAt": "2025-01-01T12:00:00.000Z",
+    "id": "clxyz..."
+  }
+}
+```
+
+### Healthcheck
+
+```
+GET /healthz -> 200 OK
+{ "ok": true, "version": "1.0.0", "uptimeSeconds": 123 }
+```
+
+## Deployment Notes
+
+1. Provision a managed Postgres instance (e.g., [Neon](https://neon.tech)).
+2. Set `DATABASE_URL` and `NEXT_PUBLIC_BASE_URL` in your hosting provider (Vercel/Render/Railway).
+3. Run `npx prisma migrate deploy` against the production database.
+4. Deploy the Next.js project (Vercel import recommended).
+5. Update this README with:
+   - ✅ Production URL
+   - ✅ GitHub repository URL
+   - ✅ Loom/video walkthrough
+   - ✅ ChatGPT/LLM transcript link
+
+## Testing
+
+- `npm run lint` — static analysis (ESLint + TypeScript strict mode)
+- Manual testing checklist:
+  - `/healthz` returns `200`
+  - Create + duplicate code rejection flow
+  - Redirect increments counters
+  - Delete removes link and redirect returns `404`
+  - Dashboard states: loading, empty, active, error
+
+## Deliverables Checklist
+
+- [ ] Hosted app URL: `https://your-tinylink.vercel.app`
+- [ ] GitHub repo URL
+- [ ] Video walkthrough link
+- [ ] LLM transcript link
+
+Update the placeholders above before submitting the assignment. Good luck!
