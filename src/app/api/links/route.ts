@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { customAlphabet } from "nanoid";
 
@@ -38,6 +38,14 @@ export async function GET() {
   return NextResponse.json({ links });
 }
 
+const isUniqueConstraintError = (
+  error: unknown,
+): error is Prisma.PrismaClientKnownRequestError =>
+  typeof error === "object" &&
+  error !== null &&
+  "code" in error &&
+  (error as { code?: unknown }).code === "P2002";
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const parsed = createLinkSchema.safeParse(body);
@@ -70,10 +78,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ link }, { status: 201 });
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
+    if (isUniqueConstraintError(error)) {
       return respondWithValidationError(
         "That code already exists. Please choose another one.",
         409,
