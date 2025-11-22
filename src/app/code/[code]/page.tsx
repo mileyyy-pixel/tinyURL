@@ -5,7 +5,7 @@ import { unstable_noStore as noStore } from "next/cache";
 
 import { CopyButton } from "@/components/copy-button";
 import { formatAbsolute, formatRelative } from "@/lib/dates";
-import { getLinkDetails } from "@/lib/links";
+import type { LinkDto } from "@/lib/links";
 
 export const runtime = "nodejs";
 
@@ -26,17 +26,34 @@ const buildBaseUrl = async () => {
   return `${protocol}://${host}`;
 };
 
+const fetchLinkFromApi = async (code: string): Promise<LinkDto> => {
+  const baseUrl = await buildBaseUrl();
+  const apiUrl = baseUrl ? `${baseUrl}/api/links/${code}` : `/api/links/${code}`;
+  const response = await fetch(apiUrl, { cache: "no-store" });
+
+  if (response.status === 404) {
+    notFound();
+  }
+
+  if (!response.ok) {
+    throw new Error("Unable to load link details");
+  }
+
+  const payload = (await response.json()) as { link?: LinkDto };
+  if (!payload.link) {
+    notFound();
+  }
+
+  return payload.link;
+};
+
 export default async function CodeStatsPage({
   params,
 }: {
   params: { code: string };
 }) {
   noStore();
-  const link = await getLinkDetails(params.code);
-
-  if (!link) {
-    notFound();
-  }
+  const link = await fetchLinkFromApi(params.code);
 
   const baseUrl = await buildBaseUrl();
   const shortUrl = baseUrl ? `${baseUrl}/${link.code}` : `/${link.code}`;
